@@ -1,0 +1,57 @@
+.\" $XFree86: xc/programs/Xserver/hw/xfree86/drivers/fbdev/fbdev.man,v 1.2 2001/01/27 18:20:47 dawes Exp $ 
+.\" shorthand for double quote that works everywhere.
+.ds q \N'34'
+.TH XENOSFB __drivermansuffix__ __vendorversion__
+.SH NAME
+xenosfb \- video driver for Xbox 360 Xenos graphics chipset
+.SH SYNOPSIS
+.nf
+.B "Section \*qDevice\*q"
+.BI "  Identifier \*q"  devname \*q
+.B  "  Driver \*qxenosfb\*q"
+.BI "  BusID  \*qpci:" bus : dev : func \*q
+\ \ ...
+.B EndSection
+.fi
+.SH DESCRIPTION
+.B xenosfb 
+is an __xservername__ framebuffer driver for the Xenos graphics chipset of the
+Xbox 360 gaming console. This is a non-accelerated driver.
+.SH SUPPORTED HARDWARE
+The 
+.B xenosfb
+driver supports all known Xbox 360 gaming console models on which it is
+possible to run unsigned code. As it is based on the fbdev generic framebuffer
+device driver, xenosfb uses the os-specific submodule
+fbdevhw(__drivermansuffix__) to talk to the kernel device driver. Currently a
+fbdevhw module is available for linux and the linux kernel for the Xbox 360 has
+built-in support for the framebuffer.
+.SH CONFIGURATION DETAILS
+Please refer to __xconfigfile__(__filemansuffix__) for general configuration
+details.  This section only covers configuration details specific to
+this driver.
+.PP
+For this driver it is not required to specify modes in the screen 
+section of the config file.  The
+.B xenosfb
+driver can pick up the currently used video mode from the framebuffer 
+driver and will use it. The only way to change the video mode is through the
+Xbox 360 dashboard.
+.PP
+The following driver 
+.B Options
+are supported:
+.TP
+.BI "Option \*qfbdev\*q \*q" string \*q
+The framebuffer device to use. Default: /dev/fb0.
+.SH "SEE ALSO"
+__xservername__(__appmansuffix__), __xconfigfile__(__filemansuffix__), xorgconfig(__appmansuffix__), Xserver(__appmansuffix__),
+X(__miscmansuffix__), fbdevhw(__drivermansuffix__)
+.SH AUTHORS
+Authors: Felix Domke, Axel Auweter \- based on the original fbdev work of:
+Gerd Knorr, Michel Dänzer, Geert Uytterhoeven
+.SH DISCLAIMER
+Microsoft, Xbox, Xbox360 (and probably some more) are registered trademarks by
+Microsoft Corp. No affiliation between the Free60 Project and Microsoft Corp.
+exists or is implied. All other trademarks and copyrights are property of their
+respective owners.

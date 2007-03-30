@@ -1,0 +1,41 @@
+Xenosfb - Framebuffer Device Driver for Xbox 360 Xenos graphics chipset
+
+This X.org device driver supports the Xenos graphics chipset as it is built into
+the Microsoft Xbox 360 gaming console. It is based on the X.org fbdev generic
+framebuffer device driver. Thus, it relies on the fbdevhw driver as well as a 
+working frambuffer device within /dev.
+
+This driver is in a very early stage and does only support graphics access
+through the framebuffer kernel device. No 2D or 3D acceleration is supported and
+changing resolution at runtime does not work. Currently the screen resolution is
+inherited from the settings in the Xbox 360 Dashboard.
+
+Please note that all hardware information that was used to develop this driver
+has been gained solely by reverse engineering and trial and error. No official
+documentation or SDK has been used.
+
+To build the driver follow the usual series of commands:
+./configure
+make
+make install
+
+Once installed, you can make your X.org server aware of the driver by adding the
+following section to your xorg.conf:
+
+Section "Device"
+     Identifier "My Xbox 360 Video Card"    # Or any other name that you will
+                                            # refer to ftom the "Screen" Section
+     Driver     "xenosfb"
+EndSection
+
+Please visit our project website at http://www.free60.org for more information
+about Linux and other alternate operating systems on the Xbox 360.
+
+March 2007,
+Felix Domke  <tmbinc@elitedvb.net>
+Axel Auweter <auweter@informatik.tu-muenchen.de>
+
+Disclaimer: Microsoft, Xbox and Xbox 360 are registered trademarks by Microsoft
+Corp. No affiliation between the Free60 Project and Microsoft Corp. exists or is
+implied. All other trademarks and copyrights are property of their respective
+owners.

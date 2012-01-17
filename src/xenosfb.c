@@ -32,12 +32,18 @@
 /* for visuals */
 #include "fb.h"
 
+#if GET_ABI_MAJOR(ABI_VIDEODRV_VERSION) < 6
 #include "xf86Resources.h"
 #include "xf86RAC.h"
+#endif
 
 #include "fbdevhw.h"
 
 #include "xf86xv.h"
+
+#ifdef XSERVER_LIBPCIACCESS
+#include <pciaccess.h>
+#endif
 
 static Bool debug = 0;
 
@@ -54,6 +60,10 @@ static Bool debug = 0;
 static const OptionInfoRec * FBDevAvailableOptions(int chipid, int busid);
 static void	FBDevIdentify(int flags);
 static Bool	FBDevProbe(DriverPtr drv, int flags);
+#ifdef XSERVER_LIBPCIACCESS
+static Bool	FBDevPciProbe(DriverPtr drv, int entity_num,
+     struct pci_device *dev, intptr_t match_data);
+#endif
 static Bool	FBDevPreInit(ScrnInfoPtr pScrn, int flags);
 static Bool	FBDevScreenInit(int Index, ScreenPtr pScreen, int argc,
 				char **argv);
@@ -72,11 +82,23 @@ enum { FBDEV_ROTATE_NONE=0, FBDEV_ROTATE_CW=270, FBDEV_ROTATE_UD=180, FBDEV_ROTA
  * This is intentionally screen-independent.  It indicates the binding
  * choice made in the first PreInit.
  */
+
 static int pix24bpp = 0;
 
 #define XENOSFB_VERSION		4000
 #define XENOSFB_NAME		"XENOSFB"
 #define XENOSFB_DRIVER_NAME	"xenosfb"
+
+#ifdef XSERVER_LIBPCIACCESS
+static const struct pci_id_match fbdev_device_match[] = {
+    {
+	PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY,
+	0x00030000, 0x00ffffff, 0
+    },
+
+    { 0, 0, 0 },
+};
+#endif
 
 _X_EXPORT DriverRec XENOSFB = {
 	XENOSFB_VERSION,
@@ -89,7 +111,12 @@ _X_EXPORT DriverRec XENOSFB = {
 	FBDevAvailableOptions,
 	NULL,
 	0,
-	FBDevDriverFunc
+	FBDevDriverFunc,
+
+#ifdef XSERVER_LIBPCIACCESS
+    fbdev_device_match,
+    FBDevPciProbe
+#endif
 };
 
 /* Supported "chipsets" */
@@ -111,55 +138,6 @@ static const OptionInfoRec FBDevOptions[] = {
 };
 
 /* -------------------------------------------------------------------- */
-
-const char *XenosShadowFBSymbols[] = {
-	"ShadowFBInit",
-	NULL
-};
-
-static const char *fbSymbols[] = {
-	"fbScreenInit",
-	"fbPictureInit",
-	NULL
-};
-
-static const char *fbdevHWSymbols[] = {
-	"fbdevHWInit",
-	"fbdevHWProbe",
-	"fbdevHWSetVideoModes",
-	"fbdevHWUseBuildinMode",
-
-	"fbdevHWGetDepth",
-	"fbdevHWGetLineLength",
-	"fbdevHWGetName",
-	"fbdevHWGetType",
-	"fbdevHWGetVidmem",
-	"fbdevHWLinearOffset",
-	"fbdevHWLoadPalette",
-	"fbdevHWMapVidmem",
-	"fbdevHWUnmapVidmem",
-
-	/* colormap */
-	"fbdevHWLoadPalette",
-	"fbdevHWLoadPaletteWeak",
-
-	/* ScrnInfo hooks */
-	"fbdevHWAdjustFrameWeak",
-	"fbdevHWEnterVTWeak",
-	"fbdevHWLeaveVTWeak",
-	"fbdevHWModeInit",
-	"fbdevHWRestore",
-	"fbdevHWSave",
-	"fbdevHWSaveScreen",
-	"fbdevHWSaveScreenWeak",
-	"fbdevHWSwitchModeWeak",
-	"fbdevHWValidModeWeak",
-
-	"fbdevHWDPMSSet",
-	"fbdevHWDPMSSetWeak",
-
-	NULL
-};
 
 #ifdef XFree86LOADER
 
@@ -189,8 +167,6 @@ XENOSFBDevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 	if (!setupDone) {
 		setupDone = TRUE;
 		xf86AddDriver(&XENOSFB, module, HaveDriverFuncs);
-		LoaderRefSymLists(XenosShadowFBSymbols, fbSymbols,
-				  fbdevHWSymbols, NULL);
 		return (pointer)1;
 	} else {
 		if (errmaj) *errmaj = LDR_ONCEONLY;
@@ -325,6 +301,53 @@ FBDevIdentify(int flags)
 	xf86PrintChipsets(XENOSFB_NAME, "driver for framebuffer of Xenon gaming console", FBDevChipsets);
 }
 
+
+#ifdef XSERVER_LIBPCIACCESS
+static Bool FBDevPciProbe(DriverPtr drv, int entity_num,
+			  struct pci_device *dev, intptr_t match_data)
+{
+    ScrnInfoPtr pScrn = NULL;
+
+    if (!xf86LoadDrvSubModule(drv, "fbdevhw"))
+	return FALSE;
+	    
+    pScrn = xf86ConfigPciEntity(NULL, 0, entity_num, NULL, NULL,
+				NULL, NULL, NULL, NULL);
+    if (pScrn) {
+	char *device;
+	GDevPtr devSection = xf86GetDevFromEntity(pScrn->entityList[0],
+						  pScrn->entityInstanceList[0]);
+
+	device = xf86FindOptionValue(devSection->options, "fbdev");
+	if (fbdevHWProbe(NULL, device, NULL)) {
+	    pScrn->driverVersion = XENOSFB_VERSION;
+	    pScrn->driverName    = XENOSFB_DRIVER_NAME;
+	    pScrn->name          = XENOSFB_NAME;
+	    pScrn->Probe         = FBDevProbe;
+	    pScrn->PreInit       = FBDevPreInit;
+	    pScrn->ScreenInit    = FBDevScreenInit;
+	    pScrn->SwitchMode    = fbdevHWSwitchModeWeak();
+	    pScrn->AdjustFrame   = fbdevHWAdjustFrameWeak();
+	    pScrn->EnterVT       = fbdevHWEnterVTWeak();
+	    pScrn->LeaveVT       = fbdevHWLeaveVTWeak();
+	    pScrn->ValidMode     = fbdevHWValidModeWeak();
+
+	    xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
+		       "claimed PCI slot %d@%d:%d:%d\n", 
+		       dev->bus, dev->domain, dev->dev, dev->func);
+	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+		       "using %s\n", device ? device : "default device");
+	}
+	else {
+	    pScrn = NULL;
+	}
+    }
+
+    return (pScrn != NULL);
+}
+#endif
+
+
 static Bool
 FBDevProbe(DriverPtr drv, int flags)
 {
@@ -348,26 +371,32 @@ FBDevProbe(DriverPtr drv, int flags)
 	if (!xf86LoadDrvSubModule(drv, "fbdevhw"))
 	    return FALSE;
 	    
-	xf86LoaderReqSymLists(fbdevHWSymbols, NULL);
-	
 	for (i = 0; i < numDevSections; i++) {
 	    Bool isIsa = FALSE;
 	    Bool isPci = FALSE;
 
 	    dev = xf86FindOptionValue(devSections[i]->options,"xenosfb");
 	    if (devSections[i]->busID) {
+#ifndef XSERVER_LIBPCIACCESS
 	        if (xf86ParsePciBusString(devSections[i]->busID,&bus,&device,
 					  &func)) {
 		    if (!xf86CheckPciSlot(bus,device,func))
 		        continue;
 		    isPci = TRUE;
-		} else if (xf86ParseIsaBusString(devSections[i]->busID))
+		} else
+#endif
+#ifdef HAVE_ISA
+		if (xf86ParseIsaBusString(devSections[i]->busID))
 		    isIsa = TRUE;
+		else
+#endif
+		    0;
 		  
 	    }
 	    if (fbdevHWProbe(NULL,dev,NULL)) {
 		pScrn = NULL;
 		if (isPci) {
+#ifndef XSERVER_LIBPCIACCESS
 		    /* XXX what about when there's no busID set? */
 		    int entity;
 		    
@@ -383,7 +412,9 @@ FBDevProbe(DriverPtr drv, int flags)
 		    xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
 			       "claimed PCI slot %d:%d:%d\n",bus,device,func);
 
+#endif
 		} else if (isIsa) {
+#ifdef HAVE_ISA
 		    int entity;
 		    
 		    entity = xf86ClaimIsaSlot(drv, 0,
@@ -391,6 +422,7 @@ FBDevProbe(DriverPtr drv, int flags)
 		    pScrn = xf86ConfigIsaEntity(pScrn,0,entity,
 						      NULL,RES_SHARED_VGA,
 						      NULL,NULL,NULL,NULL);
+#endif
 		} else {
 		   int entity;
 
@@ -422,7 +454,6 @@ FBDevProbe(DriverPtr drv, int flags)
 	}
 	xfree(devSections);
 	TRACE("probe done");
-
 	return foundScreen;
 }
 
@@ -431,8 +462,7 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 {
 	FBDevPtr fPtr;
 	int default_depth, fbbpp;
-	const char *mod = NULL, *s;
-	const char **syms = NULL;
+	const char *s;
 	int type;
 
 	if (flags & PROBE_DETECT) return FALSE;
@@ -450,6 +480,7 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 
 	fPtr->pEnt = xf86GetEntityInfo(pScrn->entityList[0]);
 
+#ifndef XSERVER_LIBPCIACCESS
 	pScrn->racMemFlags = RAC_FB | RAC_COLORMAP | RAC_CURSOR | RAC_VIEWPORT;
 	/* XXX Is this right?  Can probably remove RAC_FB */
 	pScrn->racIoFlags = RAC_FB | RAC_COLORMAP | RAC_CURSOR | RAC_VIEWPORT;
@@ -460,7 +491,7 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 		   "xf86RegisterResources() found resource conflicts\n");
 		return FALSE;
 	}
-
+#endif
 	/* open device */
 	if (!fbdevHWInit(pScrn,NULL,xf86FindOptionValue(fPtr->pEnt->device->options,"fbdev")))
 		return FALSE;
@@ -556,8 +587,6 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 		case 16:
 		case 24:
 		case 32:
-			mod = "fb";
-			syms = fbSymbols;
 			break;
 		default:
 			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
@@ -571,12 +600,9 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
                           "unrecognised fbdev hardware type (%d)\n", type);
                return FALSE;
 	}
-	if (mod && xf86LoadSubModule(pScrn, mod) == NULL) {
+	if (xf86LoadSubModule(pScrn, "fb") == NULL) {
 		FBDevFreeRec(pScrn);
 		return FALSE;
-	}
-	if (mod && syms) {
-		xf86LoaderReqSymLists(syms, NULL);
 	}
 
 	xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "loading shadowfb");
@@ -585,9 +611,7 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 			"Couldn't load shadowfb module:\n");
 		return FALSE;
 	}
-	xf86LoaderReqSymLists(XenosShadowFBSymbols, NULL);
-
-	xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "using shadow"
+		xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "using shadow"
 		   " framebuffer\n");
 
 	TRACE_EXIT("PreInit");
@@ -709,7 +733,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         fPtr->shadow = xcalloc(1, pScrn->virtualX * ((pScrn->virtualY+31)&~31) *
 				pScrn->bitsPerPixel);
 
-	if (!fPtr->shadow) {
+	    if (!fPtr->shadow) {
 		xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 			   "Failed to allocate shadow framebuffer\n");
 		return FALSE;
@@ -799,7 +823,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	    return FALSE;
 	}
 
-	FBDevDGAInit(pScrn, pScreen);
+	  FBDevDGAInit(pScrn, pScreen);
 
 	xf86SetBlackWhitePixels(pScreen);
 	miInitializeBackingStore(pScreen);
@@ -811,6 +835,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	/* colormap */
 	switch ((type = fbdevHWGetType(pScrn)))
 	{
+	/* XXX It would be simpler to use miCreateDefColormap() in all cases. */
 	case FBDEVHW_PACKED_PIXELS:
 		if (!miCreateDefColormap(pScreen)) {
 			xf86DrvMsg(scrnIndex, X_ERROR,
@@ -863,6 +888,7 @@ FBDevCloseScreen(int scrnIndex, ScreenPtr pScreen)
 	fbdevHWRestore(pScrn);
 	fbdevHWUnmapVidmem(pScrn);
 	if (fPtr->shadow) {
+	    shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
 	    xfree(fPtr->shadow);
 	    fPtr->shadow = NULL;
 	}
@@ -1009,6 +1035,7 @@ FBDevDGAAddModes(ScrnInfoPtr pScrn)
 static Bool
 FBDevDGAInit(ScrnInfoPtr pScrn, ScreenPtr pScreen)
 {
+#ifdef XFreeXDGA
     FBDevPtr fPtr = FBDEVPTR(pScrn);
 
     if (pScrn->depth < 8)
@@ -1019,6 +1046,9 @@ FBDevDGAInit(ScrnInfoPtr pScrn, ScreenPtr pScreen)
 
     return (DGAInit(pScreen, &FBDevDGAFunctions,
 	    fPtr->pDGAMode, fPtr->nDGAMode));
+#else
+    return TRUE;
+#endif
 }
 
 static Bool

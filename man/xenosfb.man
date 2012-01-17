@@ -36,7 +36,7 @@ section of the config file.  The
 .B xenosfb
 driver can pick up the currently used video mode from the framebuffer 
 driver and will use it. The only way to change the video mode is through the
-Xbox 360 dashboard.
+Xbox 360 dashboard or xenos_init() in XeLL.
 .PP
 The following driver 
 .B Options
@@ -45,11 +45,11 @@ are supported:
 .BI "Option \*qfbdev\*q \*q" string \*q
 The framebuffer device to use. Default: /dev/fb0.
 .SH "SEE ALSO"
-__xservername__(__appmansuffix__), __xconfigfile__(__filemansuffix__), xorgconfig(__appmansuffix__), Xserver(__appmansuffix__),
+__xservername__(__appmansuffix__), __xconfigfile__(__filemansuffix__), Xserver(__appmansuffix__),
 X(__miscmansuffix__), fbdevhw(__drivermansuffix__)
 .SH AUTHORS
 Authors: Felix Domke, Axel Auweter \- based on the original fbdev work of:
-Gerd Knorr, Michel Dänzer, Geert Uytterhoeven
+Gerd Knorr, Michel D\(:anzer, Geert Uytterhoeven
 .SH DISCLAIMER
 Microsoft, Xbox, Xbox360 (and probably some more) are registered trademarks by
 Microsoft Corp. No affiliation between the Free60 Project and Microsoft Corp.

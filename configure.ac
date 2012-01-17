@@ -1,7 +1,3 @@
-#  configure.ac - autoconf definitions for xenos x.org driver
-#  Based on the x.org fbdev driver.
-#  March 2007, Felix Domke, Axel Auweter 
-
 #  Copyright 2005 Adam Jackson.
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,9 +30,15 @@ AC_CONFIG_SRCDIR([Makefile.am])
 AM_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR(.)
 
-AM_INIT_AUTOMAKE([dist-bzip2])
+AM_INIT_AUTOMAKE([foreign dist-bzip2])
 
 AM_MAINTAINER_MODE
+
+# Require xorg-macros: XORG_DEFAULT_OPTIONS
+m4_ifndef([XORG_MACROS_VERSION],
+          [m4_fatal([must install xorg-macros 1.4 or later before running autoconf/autogen])])
+XORG_MACROS_VERSION(1.4)
+XORG_DEFAULT_OPTIONS
 
 # Checks for programs.
 AC_DISABLE_STATIC
@@ -50,6 +52,9 @@ AC_ARG_WITH(xorg-module-dir,
                            [Default xorg module directory [[default=$libdir/xorg/modules]]]),
             [moduledir="$withval"],
             [moduledir="$libdir/xorg/modules"])
+AC_ARG_ENABLE(pciaccess,     AS_HELP_STRING([--enable-pciaccess],
+                             [Enable use of libpciaccess (default: disabled)]),
+			     [PCIACCESS=$enableval], [PCIACCESS=no])
 
 # Checks for extensions
 XORG_DRIVER_CHECK_EXT(RANDR, randrproto)
@@ -58,7 +63,21 @@ XORG_DRIVER_CHECK_EXT(XV, videoproto)
 
 # Checks for pkg-config packages
 PKG_CHECK_MODULES(XORG, [xorg-server >= 1.0.99.901 xproto fontsproto $REQUIRED_MODULES])
-sdkdir=$(pkg-config --variable=sdkdir xorg-server)
+
+save_CFLAGS="$CFLAGS"
+CFLAGS="$XORG_CFLAGS"
+AC_CHECK_DECL(xf86ConfigIsaEntity,
+	      [AC_DEFINE(HAVE_ISA, 1, [Have ISA support])],
+	      [],
+	      [#include "xf86.h"])
+CFLAGS="$save_CFLAGS"
+
+AM_CONDITIONAL(PCIACCESS, [test "x$PCIACCESS" = xyes])
+if test "x$PCIACCESS" = xyes; then
+    AC_DEFINE(PCIACCESS, 1, [Use libpciaccess])
+    PKG_CHECK_MODULES([PCIACCESS], [pciaccess >= 0.8.0])
+    XORG_CFLAGS="$XORG_CFLAGS $PCIACCESS_CFLAGS"
+fi
 
 # Checks for libraries.
 
@@ -70,9 +89,6 @@ AC_SUBST([moduledir])
 
 DRIVER_NAME=xenosfb
 AC_SUBST([DRIVER_NAME])
-
-XORG_MANPAGE_SECTIONS
-XORG_RELEASE_VERSION
 
 AC_OUTPUT([
 	Makefile

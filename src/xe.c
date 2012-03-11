@@ -34,6 +34,7 @@
 #define VBPOOL_NUM_TRIANGLES 2000
 
 int * gpu_regs = 0;
+uint32_t xenos_id = 0;
 
 static inline void Xe_pWriteReg(struct XenosDevice *xe, u32 reg, u32 val)
 {
@@ -974,6 +975,14 @@ void Xe_Init(struct XenosDevice *xe)
 {
 	memset(xe, 0, sizeof(*xe));
 
+	// map gpu pci config space to retrieve xenos chip id (	TODO: is there a better way ? )
+	u32 * pci = ioremap(0xd0010000ULL, 0x1000, 1);
+	if(!pci) Xe_Fatal(xe,"Failed to map pci config space");
+	xenos_id=__builtin_bswap32(*pci)>>16;
+	iounmap(pci,0x1000);
+		
+	XE_PRINT("Xenos GPU ID=%04x\n", (unsigned int)xenos_id);
+	
 	void * vram = ioremap(MEMPOOL_BASE, MEMPOOL_SIZE, 0);
 	if(!vram) Xe_Fatal(xe,"Failed to map vram");
 	

@@ -50,8 +50,6 @@
 
 static Bool debug = 0;
 
-uint32_t xenos_id = 0x5831;
-
 static unsigned char content_datapspsu[] = {
 0x10, 0x2a, 0x11, 0x00, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00, 0x00,
 0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
@@ -338,7 +336,7 @@ static Bool FBDevPciProbe(DriverPtr drv, int entity_num,
 	    pScrn->EnterVT       = fbdevHWEnterVTWeak();
 	    pScrn->LeaveVT       = fbdevHWLeaveVTWeak();
 	    pScrn->ValidMode     = fbdevHWValidModeWeak();
-
+	    
 	    xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
 		       "claimed PCI slot %d@%d:%d:%d\n", 
 		       dev->bus, dev->domain, dev->dev, dev->func);
@@ -383,6 +381,7 @@ FBDevProbe(DriverPtr drv, int flags)
 	    Bool isPci = FALSE;
 
 	    dev = xf86FindOptionValue(devSections[i]->options,"xenosfb");
+	    
 	    if (devSections[i]->busID) {
 #ifndef XSERVER_LIBPCIACCESS
 	        if (xf86ParsePciBusString(devSections[i]->busID,&bus,&device,
@@ -435,6 +434,7 @@ FBDevProbe(DriverPtr drv, int flags)
 
 		    entity = xf86ClaimFbSlot(drv, 0,
 					      devSections[i], TRUE);
+		   
 		    pScrn = xf86ConfigFbEntity(pScrn,0,entity,
 					       NULL,NULL,NULL,NULL);
 		   

@@ -33,4 +33,10 @@ xenosfb_drv_la_LDFLAGS = -module -avoid-version
 xenosfb_drv_ladir = @moduledir@/drivers
 
 xenosfb_drv_la_SOURCES = \
-         xenosfb.c
+         lib_malloc.c	 \
+         ioremap.c	 \
+         xe.c		 \
+         edram.c	 \
+         ucode.c	 \
+         xenosfb.c	
+

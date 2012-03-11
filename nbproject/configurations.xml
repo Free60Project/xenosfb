@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="80">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df name="xenosfb-testing" root=".">
+      <df name="autom4te.cache">
+      </df>
+      <df name="man">
+      </df>
+      <df name="src">
+        <in>edram.c</in>
+        <in>edram.h</in>
+        <in>ioremap.c</in>
+        <in>ioremap.h</in>
+        <in>lib_malloc.c</in>
+        <in>lib_malloc.h</in>
+        <in>ucode.c</in>
+        <in>xe.c</in>
+        <in>xe.h</in>
+        <in>xe_internal.h</in>
+        <in>xenosfb.c</in>
+        <in>xetypes.h</in>
+      </df>
+      <in>config.h</in>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+      <itemPath>configure</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+          <cTool>
+            <incDir>
+              <pElem></pElem>
+              <pElem>C:/usr/include/X11/fonts</pElem>
+              <pElem>C:/usr/lib/gcc/powerpc-linux-gnu/4.6.1/include-fixed</pElem>
+              <pElem>C:/usr/include/powerpc-linux-gnu/bits</pElem>
+              <pElem>C:/root/x360dev/xenosfb-testing/src</pElem>
+              <pElem>C:/usr/include/pixman-1</pElem>
+              <pElem>C:/usr/lib/gcc/powerpc-linux-gnu/4.6.1/include</pElem>
+              <pElem>C:/root/x360dev/xenosfb-testing/src/xenosfb.c</pElem>
+              <pElem>C:/usr/include/X11/extensions</pElem>
+              <pElem>C:/usr/include/powerpc-linux-gnu/gnu</pElem>
+              <pElem>C:/usr/include/X11</pElem>
+              <pElem>C:/usr/include/xorg</pElem>
+              <pElem>C:/usr/include</pElem>
+              <pElem>C:/usr/include/powerpc-linux-gnu/sys</pElem>
+              <pElem>C:/usr/include/linux</pElem>
+              <pElem>C:/root/x360dev/xenosfb-testing</pElem>
+            </incDir>
+            <preprocessorList>
+              <Elem>HAVE_CONFIG_H=1</Elem>
+              <Elem>PIC=1</Elem>
+              <Elem>__GCC_HAVE_DWARF2_CFI_ASM=1</Elem>
+              <Elem>__PIC__=2</Elem>
+              <Elem>__REGISTER_PREFIX__=</Elem>
+              <Elem>__USER_LABEL_PREFIX__=</Elem>
+              <Elem>__pic__=2</Elem>
+            </preprocessorList>
+          </cTool>
+        </makeTool>
+      </makefileType>
+    </conf>
+  </confs>
+</configurationDescriptor>

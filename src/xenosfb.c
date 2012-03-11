@@ -45,7 +45,48 @@
 #include <pciaccess.h>
 #endif
 
+#include <xe.h>
+#include <edram.h>
+
 static Bool debug = 0;
+
+uint32_t xenos_id = 0x5831;
+
+static unsigned char content_datapspsu[] = {
+0x10, 0x2a, 0x11, 0x00, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x4b,
+0xff, 0xff, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00, 0x30, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x73, 0x00, 0xab, 0xab, 0x00, 0x04, 0x00, 0x0c,
+0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x40, 0x40, 0x40,
+0x40, 0x40, 0x00, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x00, 0xab, 0xab,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3c, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x21, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+0x00, 0x00, 0xf0, 0x50, 0x00, 0x01, 0x10, 0x02, 0x00, 0x00, 0x12, 0x00, 0xc4, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x10, 0x03, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x08, 0x00, 0x01,
+0x1f, 0x1f, 0xf6, 0x88, 0x00, 0x00, 0x40, 0x00, 0xc8, 0x0f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+0xe2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static unsigned char content_datavsvsu[] = {
+0x10, 0x2a, 0x11, 0x01, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x23,
+0xff, 0xfe, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x1c, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x00, 0x40, 0x40, 0x40, 0x40, 0x40,
+0x40, 0x40, 0x40, 0x40, 0x40, 0x00, 0xab, 0xab, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x60,
+0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x21,
+0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x90,
+0x00, 0x10, 0x00, 0x03, 0x00, 0x30, 0x50, 0x04, 0x00, 0x00, 0xf0, 0x50, 0x00, 0x00, 0x10, 0x06,
+0x30, 0x05, 0x20, 0x03, 0x00, 0x00, 0x12, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x05,
+0x00, 0x00, 0x12, 0x00, 0xc4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x06, 0x00, 0x00, 0x22, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x05, 0xf8, 0x10, 0x00, 0x00, 0x00, 0x06, 0x88, 0x00, 0x00, 0x00, 0x00,
+0x05, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x06, 0x88, 0x00, 0x00, 0x00, 0x00, 0xc8, 0x0f, 0x80, 0x3e,
+0x00, 0x00, 0x00, 0x00, 0xe2, 0x01, 0x01, 0x00, 0xc8, 0x0f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+0xe2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
 
 #define TRACE_ENTER(str) \
     do { if (debug) ErrorF("fbdev: " str " %d\n",pScrn->scrnIndex); } while (0)
@@ -180,6 +221,11 @@ XENOSFBDevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 /* our private data, and two functions to allocate/free this            */
 
 typedef struct {
+	struct XenosDevice		xe_,*xe;
+	struct XenosSurface *gfxplane;
+	struct XenosShader *sh_ps, *sh_vs;
+	struct XenosVertexBuffer *vb;
+
 	unsigned char*			fbstart;
 	unsigned char*			fbmem;
 	int				fboff;
@@ -218,75 +264,36 @@ FBDevFreeRec(ScrnInfoPtr pScrn)
 
 /* -------------------------------------------------------------------- */
 
-int *xenos_convert(ScrnInfoPtr pScrn, FBDevPtr fPtr, int *addr)
-{
-	int index = ((char*)addr) - ((char*)fPtr->fbmem);
-	int y = index / (fPtr->lineLength);
-	int x = index % (fPtr->lineLength)/4;
-	unsigned int base = ((((y & ~31)*pScrn->virtualX) + (x & ~31)*32 ) +
-	 (((x&3) + ((y&1)<<2) + ((x&28)<<1) + ((y&30)<<5)) ^ ((y&8)<<2))) * 4;
-
-	return (int*)(((char*)fPtr->fbmem) + base);
-}
-
-#define XENOS_XY_TO_STD_PTR(x,y) ((int*)(((char*)fPtr->fbmem)+y*fPtr->lineLength+x*(pScrn->bitsPerPixel/8)))
-#define XENOS_XY_TO_XENOS_PTR(x,y) xenos_convert(pScrn, fPtr, XENOS_XY_TO_STD_PTR(x,y))
-
-static int offset[1024];
-
-void XenosRefreshInit(int stride)
-{
-  int x, y;
-  for (y=0; y<32; ++y)
-    for (x=0; x<32; ++x)
-    {
-      int tile_offset = (((x&3) + ((y&1)<<2) + ((x&28)<<1) + ((y&30)<<5)) ^ ((y&8)<<2));
-      offset[tile_offset] = (x + y * stride) * 4;
-    }
-}
-
 void XenosRefreshArea (ScrnInfoPtr pScrn, int nbox, BoxPtr pBox)
 {
-  FBDevPtr fPtr = FBDEVPTR(pScrn);
-  unsigned char *fbSrc = fPtr->shadow;
+	FBDevPtr fPtr = FBDEVPTR(pScrn);
 
-  while (nbox--)
-  {
-      /* round up to complete tiles */
-    unsigned int x = pBox->x1 &~31, w = pBox->x2 - x;
-    unsigned int y = pBox->y1 &~31, h = pBox->y2 - y;
-    
-    unsigned int nr_tiles_w = (w + 31) >> 5;
-    unsigned int nr_tiles_h = (h + 31) >> 5;
-    
-    unsigned int a, b;
-    
-    for (a = 0; a < nr_tiles_h; ++a)
-    {
-      unsigned int *dst = XENOS_XY_TO_XENOS_PTR(x, y);
-      unsigned int *src = (int*)(fbSrc + (y * pScrn->virtualX)*4 + x*4);
-      for (b = 0; b < nr_tiles_w; ++b)
-      {
-		asm __volatile__ (
-		    "li 6, 0x400;"
-		    "mtctr 6;"
-			"subi 7, %1, 4;"
-		"1:;"
-		    "lwzu    6, 4(7);"
-		    "lwbrx   6, %2, 6;" 
-		    "stwx    6, 0, %0;"
-		    "addi    %0, %0, 4;"
-		    "bdnz 1b;"
-		    : "=b" (dst)
-		    : "r" (offset), "b" (src), "b" (dst)
-		    : "ctr", "r6", "r7"
-		    );
-        src += 32;
-      }
-      y += 32;
-    }
-    pBox++;
-  }
+		/* wait for render finish */
+ 	Xe_Sync(fPtr->xe);
+
+		/* flush cache */
+	Xe_Surface_LockRect(fPtr->xe, fPtr->gfxplane, 0, 0, 0, 0, XE_LOCK_WRITE);
+	Xe_Surface_Unlock(fPtr->xe, fPtr->gfxplane);
+
+		/* begin a new frame, i.e. reset all renderstates to the default */
+	Xe_InvalidateState(fPtr->xe);
+
+
+	Xe_SetZEnable(fPtr->xe,0);
+	Xe_SetCullMode(fPtr->xe,XE_CULL_NONE);
+	
+		/* draw rect */
+	Xe_SetShader(fPtr->xe, SHADER_TYPE_PIXEL, fPtr->sh_ps, 0);
+	Xe_SetShader(fPtr->xe, SHADER_TYPE_VERTEX, fPtr->sh_vs, 0);
+	Xe_SetStreamSource(fPtr->xe, 0, fPtr->vb, 0, 4); /* using this vertex buffer */
+	Xe_SetTexture(fPtr->xe, 0, fPtr->gfxplane); /* ... and this texture */
+	Xe_DrawPrimitive(fPtr->xe, XE_PRIMTYPE_RECTLIST, 0, 1);
+
+		/* resolve */
+	Xe_ResolveInto(fPtr->xe,Xe_GetFramebufferSurface(fPtr->xe),XE_SOURCE_COLOR,0);
+
+		/* start rendering */
+	Xe_Execute(fPtr->xe);
 }
 
 static const OptionInfoRec *
@@ -496,9 +503,11 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 	if (!fbdevHWInit(pScrn,NULL,xf86FindOptionValue(fPtr->pEnt->device->options,"fbdev")))
 		return FALSE;
 	default_depth = fbdevHWGetDepth(pScrn,&fbbpp);
+	
 	if (!xf86SetDepthBpp(pScrn, default_depth, default_depth, fbbpp,
-			     Support24bppFb | Support32bppFb | SupportConvert32to24 | SupportConvert24to32))
+			     Support32bppFb | Support24bppFb | SupportConvert32to24 | SupportConvert24to32))
 		return FALSE;
+	
 	xf86PrintDepthBpp(pScrn);
 
 	/* Get the depth24 pixmap format */
@@ -507,11 +516,22 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 
 	/* color weight */
 	if (pScrn->depth > 8) {
-		rgb zeros = { 0, 0, 0 };
-		if (!xf86SetWeight(pScrn, zeros, zeros))
+		rgb zero = { 0, 0, 0 };
+		if (!xf86SetWeight(pScrn, zero, zero))
 			return FALSE;
-	}
+		
+		
+		// ARGB
+		
+		pScrn->mask.red=0xff0000;
+		pScrn->mask.green=0xff00;
+		pScrn->mask.blue=0xff;
 
+		pScrn->offset.red=16;
+		pScrn->offset.green=8;
+		pScrn->offset.blue=0;
+	}
+	
 	/* visual init */
 	if (!xf86SetDefaultVisual(pScrn, -1))
 		return FALSE;
@@ -532,6 +552,7 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 		}
 	}
 
+	
 	pScrn->progClock = TRUE;
 	pScrn->rgbBits   = 8;
 	pScrn->chipset   = "fbdev";
@@ -614,53 +635,19 @@ FBDevPreInit(ScrnInfoPtr pScrn, int flags)
 		xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "using shadow"
 		   " framebuffer\n");
 
+		/* initialize the GPU */
+	fPtr->xe=&fPtr->xe_;
+	Xe_Init(fPtr->xe);
+
 	TRACE_EXIT("PreInit");
 	return TRUE;
 }
 
 
 static Bool
-FBDevCreateScreenResources(ScreenPtr pScreen)
-{
-    PixmapPtr pPixmap;
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
-    FBDevPtr fPtr = FBDEVPTR(pScrn);
-    Bool ret;
-
-    pScreen->CreateScreenResources = fPtr->CreateScreenResources;
-    ret = pScreen->CreateScreenResources(pScreen);
-    pScreen->CreateScreenResources = FBDevCreateScreenResources;
-
-    if (!ret)
-	return FALSE;
-
-    pPixmap = pScreen->GetScreenPixmap(pScreen);
-
-    return TRUE;
-}
-
-static Bool
 FBDevShadowInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
-    FBDevPtr fPtr = FBDEVPTR(pScrn);
-
     ShadowFBInit(pScreen, XenosRefreshArea);
-
-    /* Enable the shadowbuffer -- XBOX */
-    /*
-    if(!shadowInit(pScreen, FBshadowUpdatePacked, NULL)) {
-	return FALSE;
-    }
-    */
-    /*
-    if (!shadowSetup(pScreen)) {
-	return FALSE;
-    }
-    */
-
-    fPtr->CreateScreenResources = pScreen->CreateScreenResources;
-    pScreen->CreateScreenResources = FBDevCreateScreenResources;
 
     return TRUE;
 }
@@ -678,7 +665,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
 	TRACE_ENTER("FBDevScreenInit");
 
-#if DEBUG
+#if 0
 	ErrorF("\tbitsPerPixel=%d, depth=%d, defaultVisual=%s\n"
 	       "\tmask: %x,%x,%x, offset: %d,%d,%d\n",
 	       pScrn->bitsPerPixel,
@@ -697,10 +684,10 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
 	fbdevHWSave(pScrn);
 
-	if (!fbdevHWModeInit(pScrn, pScrn->currentMode)) {
+/*	if (!fbdevHWModeInit(pScrn, pScrn->currentMode)) {
 		xf86DrvMsg(scrnIndex,X_ERROR,"mode initialization failed\n");
 		return FALSE;
-	}
+	}*/
 	fbdevHWSaveScreen(pScreen, SCREEN_SAVER_ON);
 	fbdevHWAdjustFrame(scrnIndex,0,0,0);
 
@@ -729,11 +716,55 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	}
 
 	fPtr->fbstart = fPtr->fbmem + fPtr->fboff;
+	
+		/* create a render target (the framebuffer) */
+	struct XenosSurface *fb = Xe_GetFramebufferSurface(fPtr->xe);
+	Xe_SetRenderTarget(fPtr->xe, fb);
 
-        fPtr->shadow = xcalloc(1, pScrn->virtualX * ((pScrn->virtualY+31)&~31) *
-				pScrn->bitsPerPixel);
+		/* let's define a vertex buffer format */
+	static const struct XenosVBFFormat vbf =
+	{
+		2, {
+		  {XE_USAGE_POSITION, 0, XE_TYPE_FLOAT2},
+		  {XE_USAGE_TEXCOORD, 0, XE_TYPE_FLOAT2},
+		}
+	};
+	
+	float xo=2.0f/pScrn->virtualX;
+	float yo=2.0f/pScrn->virtualY;
+	
+	float rect[] = {
+		-1.0f,  1.0f, 0.0f, 0.0f,
+		 1.0f-xo,  1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f+yo, 0.0f, 1.0f,
+	};
+	
+		/* load pixel shader */
+	fPtr->sh_ps = Xe_LoadShaderFromMemory(fPtr->xe, content_datapspsu);
+	Xe_InstantiateShader(fPtr->xe, fPtr->sh_ps, 0);
 
-	    if (!fPtr->shadow) {
+		/* load vertex shader */
+	fPtr->sh_vs = Xe_LoadShaderFromMemory(fPtr->xe, content_datavsvsu);
+	Xe_InstantiateShader(fPtr->xe, fPtr->sh_vs, 0);
+	Xe_ShaderApplyVFetchPatches(fPtr->xe, fPtr->sh_vs, 0, &vbf);
+
+		/* create and fill vertex buffer */
+	fPtr->vb = Xe_CreateVertexBuffer(fPtr->xe, sizeof(rect));
+	void *v = Xe_VB_Lock(fPtr->xe, fPtr->vb, 0, sizeof(rect), XE_LOCK_WRITE);
+	memcpy(v, rect, sizeof(rect));
+	Xe_VB_Unlock(fPtr->xe, fPtr->vb);
+
+        fPtr->gfxplane = Xe_CreateTexture(fPtr->xe, pScrn->virtualX, pScrn->virtualY, 1, XE_FMT_8888 | XE_FMT_ARGB, 0);
+	fPtr->gfxplane->use_filtering = 0;
+	fPtr->gfxplane->u_addressing = XE_TEXADDR_CLAMP;
+	fPtr->gfxplane->v_addressing = XE_TEXADDR_CLAMP;
+	
+	fPtr->shadow = Xe_Surface_LockRect(fPtr->xe, fPtr->gfxplane, 0, 0, 0, 0, XE_LOCK_WRITE);
+	Xe_Surface_Unlock(fPtr->xe, fPtr->gfxplane);
+
+	edram_init(fPtr->xe);
+
+        if (!fPtr->shadow) {
 		xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 			   "Failed to allocate shadow framebuffer\n");
 		return FALSE;
@@ -823,7 +854,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	    return FALSE;
 	}
 
-	  FBDevDGAInit(pScrn, pScreen);
+//        FBDevDGAInit(pScrn, pScreen);
 
 	xf86SetBlackWhitePixels(pScreen);
 	miInitializeBackingStore(pScreen);
@@ -850,6 +881,7 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 			   "(%d) encountered in FBDevScreenInit()\n", type);
 		return FALSE;
 	}
+
 	flags = CMAP_PALETTED_TRUECOLOR;
 	if(!xf86HandleColormaps(pScreen, 256, 8, fbdevHWLoadPaletteWeak(), 
 				NULL, flags))
@@ -872,8 +904,6 @@ FBDevScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	    }
 	}
 
-	XenosRefreshInit(pScrn->virtualX);
-	
 	TRACE_EXIT("FBDevScreenInit");
 
 	return TRUE;
@@ -887,11 +917,11 @@ FBDevCloseScreen(int scrnIndex, ScreenPtr pScreen)
 	
 	fbdevHWRestore(pScrn);
 	fbdevHWUnmapVidmem(pScrn);
-	if (fPtr->shadow) {
+/*	if (fPtr->shadow) {
 //	    shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
 	    xfree(fPtr->shadow);
 	    fPtr->shadow = NULL;
-	}
+	}*/
 	if (fPtr->pDGAMode) {
 	  xfree(fPtr->pDGAMode);
 	  fPtr->pDGAMode = NULL;

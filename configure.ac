@@ -22,7 +22,7 @@
 
 AC_PREREQ(2.57)
 AC_INIT([xf86-video-xenosfb],
-        0.0.5,
+        0.0.6,
         [https://www.free60.org/],
         xf86-video-xenosfb)
 

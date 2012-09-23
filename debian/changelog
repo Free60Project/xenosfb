@@ -1,3 +1,10 @@
+xserver-xorg-video-xenosfb (1:0.0.6-0free60) UNRELEASED; urgency=low
+
+  * Updated xenos code by GliGli
+  * Introduce debian packaging
+
+ -- tuxuser <webmaster@libxenon.org>  Sun, 23 Sep 2012 22:02:23 +0200
+
 xserver-xorg-video-xenosfb (1:0.4.2-4) unstable; urgency=low
 
   * Switch to dh:

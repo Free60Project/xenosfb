@@ -1,0 +1,46 @@
+Source: xserver-xorg-video-xenosfb
+Section: x11
+Priority: optional
+Maintainer: Debian X Strike Force <debian-x@lists.debian.org>
+Uploaders: Cyril Brulebois <kibi@debian.org>
+Build-Depends:
+ debhelper (>= 8),
+ dh-autoreconf,
+ quilt,
+ pkg-config,
+ xserver-xorg-dev (>= 2:1.9.4),
+ x11proto-core-dev,
+ x11proto-fonts-dev,
+ x11proto-randr-dev,
+ x11proto-render-dev,
+ x11proto-video-dev,
+ xutils-dev (>= 1:7.5+1),
+Standards-Version: 3.9.1
+Vcs-Git: git://github.com/Free60Project/xenosfb.git
+Vcs-Browser: https://github.com/Free60Project/xenosfb
+
+Package: xserver-xorg-video-xenosfb
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ ${xviddriver:Depends},
+Provides:
+ ${xviddriver:Provides}
+Description: X.Org X server -- xenosfb display driver
+ This package provides the driver for the Xbox 360 Linux framebuffer device (aka
+ 'xenosfb').
+ .
+ More information about X.Org can be found at:
+ <URL:http://www.X.org>
+ .
+ This package is built from the X.org xf86-video-xenosfb driver module.
+
+Package: xserver-xorg-video-xenosfb-udeb
+XC-Package-Type: udeb
+Section: debian-installer
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${xviddriver:Depends}
+Provides: ${xviddriver:Provides}
+Description: X.Org X server -- xenosfb display driver
+ This is a udeb, or a microdeb, for the debian-installer.

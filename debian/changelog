@@ -1,4 +1,4 @@
-xserver-xorg-video-xenosfb (1:0.0.6-0free60) UNRELEASED; urgency=low
+xserver-xorg-video-xenosfb (1:0.0.6-0squeeze1~0free60) squeeze; urgency=low
 
   * Updated xenos code by GliGli
   * Introduce debian packaging
